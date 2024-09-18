@@ -1,12 +1,17 @@
 <template>
   <view>
-    <button v-if="!isPlaying"
+    <button v-if="!isRecording"
+            :disabled="isPlaying"
             @click="startRecord">录音</button>
     <button v-else
             @click="stopRecord">结束</button>
 
-    <button :disabled="!(buffers.length >0 && !isPlaying)"
-            @click="playRecord">播放</button>
+    <button v-if="isPlaying && !isRecording"
+            @click="stopPlay">停止播放</button>
+    <button :disabled="!(buffers.length > 0 && !isRecording)"
+            v-else
+            @click="startPlay">开始播放</button>
+
   </view>
 </template>
 
@@ -18,19 +23,21 @@
         import PCMPlayer from '../../pcm-player'
 
         const isPlaying = ref(false)
+        const isRecording = ref(false)
         let recorderManager = ref()
         let buffers: any = ref([])
         let player: any = ref('')
 
         const stopRecord = () => {
           recorderManager.value.stop()
+          isRecording.value = false
           isPlaying.value = false
         }
 
         const startRecord = () => {
           player.value && player.value.destroy()
           buffers.value = []
-          isPlaying.value = true
+          isRecording.value = true
           const options = {
             duration: 10 * 60 * 1000,
             sampleRate: 8000,
@@ -51,6 +58,11 @@
               sampleRate: 8000,
               flushingTime: 1
             })
+
+            setTimeout(() => {
+              // 制造回音的效果
+              startPlay()
+            }, 5000)
           })
 
 
@@ -65,10 +77,10 @@
 
           recorderManager.value.onStop((res) => {
             console.log('说话onStop', res)
-
           })
         }
-        const playRecord = () => {
+        const startPlay = () => {
+          isPlaying.value = true
           try {
             buffers.value.forEach(value => {
               player && player.feed(new Int16Array(value))
@@ -76,6 +88,11 @@
           } catch (e) {
             console.warn('robot play error:', e)
           }
+        }
+
+        const stopPlay = () => {
+          isPlaying.value = false
+          buffers.value = []
         }
 </script>
 <style>
